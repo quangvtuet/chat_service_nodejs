@@ -1,9 +1,18 @@
-import mongoose from "mongoose";
+import { mongoose } from "mongoose";
 
-main().catch(err => console.log(err));
+mongoose.set("strictQuery", false);
 
-async function main() {
-  await mongoose.connect('mongodb://localhost:27017/test');
-  
-  // use `await mongoose.connect('mongodb://user:password@localhost:27017/test');` if your database has auth enabled
-}
+const databaseConnect = () => {
+  mongoose
+    .connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(() => {
+      console.log("Mongodb database connect....");
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+};
+export default databaseConnect;
