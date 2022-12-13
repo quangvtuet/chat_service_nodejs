@@ -2,32 +2,10 @@ import { model, Schema } from "mongoose";
 
 const messageSchema = new Schema(
   {
-    senderId: {
-      type: String,
-      required: true,
-    },
-    senderName: {
-      type: String,
-      required: true,
-    },
-    reseverId: {
-      type: String,
-      required: true,
-    },
-    message: {
-      text: {
-        type: String,
-        default: "",
-      },
-      image: {
-        type: String,
-        default: "",
-      },
-    },
-    status: {
-      type: String,
-      default: "unseen",
-    },
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    messageType: String(['image', 'text', 'file']),
+    
   },
   { timestamps: true }
 );

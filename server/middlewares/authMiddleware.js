@@ -2,20 +2,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/userModel.js"
 import asyncHandler from "express-async-handler";
 
-
-export async function authMiddleware(req, res, next) {
-    const { authToken } = req.cookies;
-    if (authToken) {
-
-        const deCodeToken = await jwt.verify(authToken, process.env.SECRET);
-        req.myId = deCodeToken.id;
-        next();
-    } else {
-        res.status(400).json({ error: { errorMessage: ['please login'] } });
-    }
-}
-
-const protect = asyncHandler(async (req, res, next) => {
+export const authMiddleware = asyncHandler(async (req, res, next) => {
   let token;
 
   if (
@@ -32,6 +19,7 @@ const protect = asyncHandler(async (req, res, next) => {
 
       next();
     } catch (error) {
+      console.error(error);
       res.status(401);
       throw new Error("Not authorized, token failed");
     }
@@ -42,5 +30,3 @@ const protect = asyncHandler(async (req, res, next) => {
     throw new Error("Not authorized, no token");
   }
 });
-
-module.exports = { protect };

@@ -1,192 +1,100 @@
 import formidable from "formidable";
-import validator from "validator";
 import userModel from "../models/userModel.js";
 import fs from "fs";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import path from "path";
+import { generateToken, setOptionRes } from "../config/genToken.js";
+import { validatorUserRegistration, validatorUserLogin } from "../helper/userHelper.js"
 const __dirname = path.resolve();
 
 export function userRegister(req, res) {
   const form = formidable();
   form.parse(req, async (err, fields, files) => {
-    const { userName, email, password, confirmPassword } = fields;
-    const error = [];
-    if (!userName) {
-      error.push("please provide your user name");
-    }
-    if (!email) {
-      error.push("please provide your email");
-    }
-    if (email && !validator.isEmail(email)) {
-      error.push("please provide your valid email");
-    }
-    if (!password) {
-      error.push("please provide your password");
-    }
-    if (!confirmPassword) {
-      error.push("please provide user confirm password");
-    }
-    if (password && confirmPassword && password !== confirmPassword) {
-      error.push("your password and confirm password not same");
-    }
-    if (password && password.length < 6) {
-      error.push("please provide password must be 6 charecter");
-    }
-    if (Object.keys(files).length === 0) {
-      error.push("please provide user image");
-    }
-    if (error.length > 0) {
+    const { userName, email, password } = fields;
+    validatorUserRegistration(fields, files, res);
+    try {
+      const checkUser = await userModel.findOne({ email: email });
+      console.log(checkUser);
+      if (checkUser) {
+        res.status(400);
+        throw "User already exists";
+      }
+      const getImageName = files.image.name;
+      const randNumber = Math.floor(Math.random() * 99999);
+      const newImagename = randNumber + getImageName;
+      files.image.name = newImagename;
+      const newPath = __dirname + `/client/public/image/${files.image.originalFilename}`;
+      fs.copyFile(files.image.filepath, newPath, async (error) => {
+        if (!error) {
+          const userCreate = await userModel.create({
+            userName,
+            email,
+            password: await bcrypt.hash(password, 10),
+            image: newPath,
+          });
+          const token = generateToken(userCreate);
+          const options = setOptionRes();
+
+          res.status(201).cookie("authToken", token, options).json({
+            successMessage: "Your Register successfull",
+            token,
+          });
+        } else {
+          res.status(404).json({
+            error: {
+              errorMessage: error,
+            },
+          });
+        }
+      });
+    } catch (error) {
       res.status(400).json({
         error: {
           errorMessage: error,
         },
       });
-    } else {
-      const getImageName = files.image.name;
-      const randNumber = Math.floor(Math.random() * 99999);
-      const newImagename = randNumber + getImageName;
-      files.image.name = newImagename;
-      const newPath =
-        __dirname + `/client/public/image/${files.image.originalFilename}`;
-      try {
-        const checkUser = await userModel.findOne({
-          email: email,
-        });
-        if (checkUser) {
-          res.status(404).json({
-            error: {
-              errorMessage: ["Your Email allready exited"],
-            },
-          });
-        } else {
-          fs.copyFile(files.image.filepath, newPath, async (error) => {
-            if (!error) {
-              const userCreate = await userModel.create({
-                userName,
-                email,
-                password: await bcrypt.hash(password, 10),
-                image: newPath,
-              });
-
-              const token = jwt.sign(
-                {
-                  id: userCreate._id,
-                  email: userCreate.email,
-                  userName: userCreate.userName,
-                  image: userCreate.image,
-                  registerTime: userCreate.createAt,
-                },
-                process.env.SECRET,
-                {
-                  expiresIn: process.env.TOKEN_EXP,
-                }
-              );
-
-              const options = {
-                expires: new Date(
-                  Date.now() + process.env.COOKIE_EXP * 24 * 60 * 60 * 1000
-                ),
-              };
-
-              res.status(201).cookie("authToken", token, options).json({
-                successMessage: "Your Register successfull",
-                token,
-              });
-            } else {
-              res.status(404).json({
-                error: {
-                  errorMessage: ["Internal server error"],
-                },
-              });
-            }
-          });
-        }
-      } catch (error) {
-        res.status(404).json({
-          error: {
-            errorMessage: ["Internal server error"],
-          },
-        });
-      }
     }
   });
 }
 
-
 export async function userLogin(req, res) {
-  const error = [];
-  const {
-    email,
-    password
-  } = req.body;
-  if (!email) {
-    error.push('Please provide your email')
-  }
-  if (!password) {
-    error.push('Please provide your password')
-  }
-  if (email && !validator.isEmail(email)) {
-    error.push('Please provide your valid email');
-  }
-  if (error.length > 0) {
-    res.status(400).json({
-      error: {
-        errorMessage: error
-      }
-    });
-  } else {
-    try {
-      const checkUser = await userModel.findOne({
-        email: email
-      }).select('+password');
-
-      if (checkUser) {
-        const matchPassword = await bcrypt.compare(password, checkUser.password);
-        if (matchPassword) {
-          const token = jwt.sign({
-            id: checkUser._id,
-            email: checkUser.email,
-            userName: checkUser.userName,
-            image: checkUser.image,
-            registerTime: checkUser.createAt
-          }, process.env.SECRET, {
-            expiresIn: process.env.TOKEN_EXP
-          });
-
-          const options = {
-            expires: new Date(Date.now() + process.env.COOKIE_EXP * 24 * 60 * 60 * 1000)
-          }
-
-          res.status(200).cookie('authToken', token, options).json({
-            successMessage: 'Your login successfull',
-            token
-          })
-        } else {
-          res.status(400).json({
-            error: {
-              errorMessage: ['your password not valid']
-            }
-          });
-        }
+  const { email, password } = req.body;
+  validatorUserLogin(email, password, res);
+  try {
+    const checkUser = await userModel.findOne({
+      email: email
+    }).select('+password');
+    if (checkUser) {
+      const matchPassword = await bcrypt.compare(password, checkUser.password);
+      if (matchPassword) {
+        const token = generateToken(checkUser);
+        const options = setOptionRes()
+        res.status(200).cookie('authToken', token, options).json({
+          successMessage: 'Your login successfull',
+          token
+        })
       } else {
         res.status(400).json({
           error: {
-            errorMessage: ['your email not found']
+            errorMessage: ['your password not valid']
           }
         });
       }
-
-    } catch (error) {
-      console.log(error);
-      res.status(404).json({
+    } else {
+      res.status(400).json({
         error: {
-          errorMessage: ['Internal server error']
+          errorMessage: ['your email not found']
         }
       });
     }
+  } catch (error) {
+    console.log(error);
+    res.status(404).json({
+      error: {
+        errorMessage: ['Internal server error']
+      }
+    });
   }
-
 }
 
 export function userLogout(req, res) {
@@ -203,4 +111,18 @@ export function userLogout(req, res) {
     });
   }
 
+}
+
+export async function allUsers(req, res) {
+  const keyword = req.query.search
+    ? {
+      $or: [
+        { name: { $regex: req.query.search, $options: "i" } },
+        { email: { $regex: req.query.search, $options: "i" } },
+      ],
+    }
+    : {};
+
+  const users = await userModel.find(keyword).find({ _id: { $ne: req.user._id } });
+  res.send(users);
 }
