@@ -44,9 +44,9 @@ export function validatorUserRegistration(fields, files, res) {
     if (password && password.length < 6) {
         error.push("please provide password must be 6 charecter");
     }
-    if (Object.keys(files).length === 0) {
-        error.push("please provide user image");
-    }
+    // if (Object.keys(files).length === 0) {
+    //     error.push("please provide user image");
+    // }
     if (error.length > 0) {
         res.status(400).json({
             error: {

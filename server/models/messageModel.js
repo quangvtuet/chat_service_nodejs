@@ -1,13 +1,16 @@
-import { model, Schema } from "mongoose";
+import { mongoose, model, Schema } from "mongoose";
 
 const messageSchema = new Schema(
   {
     sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    messageType: String(['image', 'text', 'file']),
-    
+    messageType: {
+      type: String,
+      enum: ['image', 'text', 'file'],
+    },
+    content: { type: String, trim: true },
+    chat: { type: mongoose.Schema.Types.ObjectId, ref: "Chat" },
   },
   { timestamps: true }
 );
 
-export default model("message", messageSchema);
+export default model("Message", messageSchema);
