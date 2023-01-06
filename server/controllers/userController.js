@@ -23,7 +23,7 @@ export function userRegister(req, res) {
         const userCreate = await userModel.create({
           userName,
           email,
-          password: await bcrypt.hash(password, 10),
+          password: password,
         });
         const token = generateToken(userCreate);
         const options = setOptionRes();
@@ -43,7 +43,7 @@ export function userRegister(req, res) {
             const userCreate = await userModel.create({
               userName,
               email,
-              password: await bcrypt.hash(password, 10),
+              password: password,
               image: newPath,
             });
             const token = generateToken(userCreate);
