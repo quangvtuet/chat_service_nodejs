@@ -78,7 +78,7 @@ export async function userLogin(req, res) {
   try {
     const checkUser = await userModel.findOne({ email: email }).select('+password');
 
-    if (checkUser && checkUser.matchPassword(password)) {
+    if (checkUser && await checkUser.matchPassword(password)) {
 
       const token = generateToken(checkUser);
       const options = setOptionRes()
