@@ -4,11 +4,20 @@ import User from "../models/userModel.js";
 import Chat from "../models/chatModel.js";
 
 //@description     Get all Messages
-//@route           GET /api/Message/:chatId
+//@route           GET /api/Message/:chatId?offset=0&limit=10
 //@access          Protected
 export const allMessages = asyncHandler(async (req, res) => {
   try {
+    const offset = req.query.offset || 0;
+    const limit = req.query.limit || 10;
+    if (!offset || offset < 0 || !limit || limit < 0) {
+      return res.status(400).send({
+          error: 'invalid value for offset or limit'
+      });
+    }
     const messages = await Message.find({ chat: req.params.chatId })
+      .skip(offset)
+      .limit(limit)
       .populate("sender", "name pic email")
       .populate("chat");
     res.json(messages);

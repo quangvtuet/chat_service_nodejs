@@ -53,16 +53,26 @@ export const accessChat = asyncHandler(async (req, res) => {
 });
 
 //@description     Fetch all chats for a user
-//@route           GET /api/chat/
+//@route           GET /api/chat/?offset=0&limit=10
 //@access          Protected
 export const fetchChats = asyncHandler(async (req, res) => {
   try {
+    const offset = req.query.offset || 0;
+    const limit = req.query.limit || 10;
+    if (!offset || offset < 0 || !limit || limit < 0) {
+      return res.status(400).send({
+          error: 'invalid value for offset or limit'
+      });
+    }
     Chat.find({ users: { $elemMatch: { $eq: req.user._id } } })
+      .skip(offset)
+      .limit(limit)
       .populate("users", "-password")
       // .populate("groupAdmin", "-password")
       .populate("latestMessage")
       .sort({ updatedAt: -1 })
       .then(async (results) => {
+        console.log(results);
         results = await User.populate(results, {
           path: "latestMessage.sender",
           select: "name pic email",
