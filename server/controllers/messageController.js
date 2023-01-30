@@ -19,7 +19,8 @@ export const allMessages = asyncHandler(async (req, res) => {
       .skip(offset)
       .limit(limit)
       .populate("sender", "name pic email")
-      .populate("chat");
+      .populate("chat")
+      .sort({ updatedAt: -1 });
     res.json(messages);
   } catch (error) {
     res.status(400);
