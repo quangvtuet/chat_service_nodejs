@@ -27,10 +27,12 @@ export function userRegister(req, res) {
         });
         const token = generateToken(userCreate);
         const options = setOptionRes();
-
+        var userInfo = checkUser.toObject();
+        delete userInfo.password;
         res.status(201).cookie("authToken", token, options).json({
-          successMessage: "Your Register successfull",
+          successMessage: "Your Register successfull1",
           token,
+          userInfo
         });
       } else {
         const getImageName = files.image.name;
@@ -48,10 +50,12 @@ export function userRegister(req, res) {
             });
             const token = generateToken(userCreate);
             const options = setOptionRes();
-
+            var userInfo = checkUser.toObject();
+            delete userInfo.password;
             res.status(201).cookie("authToken", token, options).json({
-              successMessage: "Your Register successfull",
+              successMessage: "Your Register successfull2",
               token,
+              userInfo
             });
           } else {
             res.status(404).json({
@@ -82,9 +86,12 @@ export async function userLogin(req, res) {
 
       const token = generateToken(checkUser);
       const options = setOptionRes()
+      var userInfo = checkUser.toObject();
+      delete userInfo.password;
       res.status(200).cookie('authToken', token, options).json({
         successMessage: 'Your login successfull',
-        token
+        token,
+        userInfo
       })
     } else {
       res.status(401).json({

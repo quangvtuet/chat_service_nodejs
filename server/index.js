@@ -28,7 +28,7 @@ let server = app.listen(PORT, () => {
 
 import { Server } from "socket.io";
 const io = new Server(server, {
-  cors: { origin: "http://localhost:3000" },
+  cors: { origin: "*" },
   pingTimeout: 60000,
 });
 
