@@ -64,7 +64,8 @@ export const fetchChats = asyncHandler(async (req, res) => {
           error: 'invalid value for offset or limit'
       });
     }
-    Chat.find({ users: { $elemMatch: { $eq: req.user._id } } })
+    Chat.find({ users: { $elemMatch: { $eq: req.user._id } } 
+      ,latestMessage: { $exists: true } })
       .skip(offset)
       .limit(limit)
       .populate("users", "-password")
