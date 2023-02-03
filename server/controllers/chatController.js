@@ -64,8 +64,15 @@ export const fetchChats = asyncHandler(async (req, res) => {
           error: 'invalid value for offset or limit'
       });
     }
-    Chat.find({ users: { $elemMatch: { $eq: req.user._id } } 
-      ,latestMessage: { $exists: true } })
+    let query = {
+      users: { $all: [req.user._id] }
+      , latestMessage: { $exists: true }
+    };
+    const userIds = req.body.userId;
+    if (Array.isArray(userIds) && userIds.length) {
+      query.users.$in = userIds;
+    }
+    Chat.find(query)
       .skip(offset)
       .limit(limit)
       .populate("users", "-password")
@@ -73,7 +80,6 @@ export const fetchChats = asyncHandler(async (req, res) => {
       .populate("latestMessage")
       .sort({ updatedAt: -1 })
       .then(async (results) => {
-        console.log(results);
         results = await User.populate(results, {
           path: "latestMessage.sender",
           select: "name pic email",
