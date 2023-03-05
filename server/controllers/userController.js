@@ -53,7 +53,7 @@ export function userRegister(req, res) {
             var userInfo = checkUser.toObject();
             delete userInfo.password;
             res.status(201).cookie("authToken", token, options).json({
-              successMessage: "Your Register successfull2",
+              successMessage: "Your Register successfull",
               token,
               userInfo
             });
@@ -77,7 +77,7 @@ export function userRegister(req, res) {
 }
 
 export async function userLogin(req, res) {
-  const { email, password } = req.body;
+  const { email, password , old_account } = req.body;
   validatorUserLogin(email, password, res);
   try {
     const checkUser = await userModel.findOne({ email: email }).select('+password');
@@ -93,7 +93,25 @@ export async function userLogin(req, res) {
         token,
         userInfo
       })
-    } else {
+    } 
+    if (!checkUser && old_account){
+      let userName = email.split('@')[0];
+      const userCreate = await userModel.create({
+        userName,
+        email,
+        password: password,
+      });
+      const token = generateToken(userCreate);
+      const options = setOptionRes();
+      var userInfo = userCreate.toObject();
+      delete userInfo.password;
+      res.status(201).cookie("authToken", token, options).json({
+        successMessage: "Your login successfull1",
+        token,
+        userInfo
+      });
+    }
+    else {
       res.status(401).json({
         error: {
           errorMessage: ['Invalid Email or Password']
